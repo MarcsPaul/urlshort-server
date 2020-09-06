@@ -74,4 +74,9 @@ app.delete('/deleteUrl/:urlId', async function(req, res) {
     res.send(responseHandler.success("deleteUrl Success !", urlDeleteResponse));
 });
 
-app.listen(3000);
+// app.listen(3000);
+
+var server = app.listen(process.env.PORT || 8080, function() {
+    var port = server.address().port;
+    console.log("App now running on port", port);
+});
