@@ -2,62 +2,65 @@ var express = require('express');
 const responseHandler = require("./packResponse")
 const constants = require("./constants")
 const bodyParser = require("body-parser");
+const authHandler = require("./middleware/authHandler")
+const urlOperations = require("./middleware/urlOperations")
 var app = express();
 var jsonParser = bodyParser.json()
 var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 
-app.post('/login', jsonParser, function(req, res) {
+app.post('/login', jsonParser, async function(req, res) {
 
-    let username = req.body.username;
-    let password = req.body.password;
-    if (username == "username" && password == "password") {
-        res.send(responseHandler.success("Login Success !", req.body.username));
-    } else {
+    try {
+        let username = req.body.username;
+        let password = req.body.password;
+        console.log(username)
+        console.log(password)
 
-    }
-});
-app.post('/getUrlData', jsonParser, function(req, res) {
-    let urlList = ["binarythread.com/jkdfunfkl"]
-    let expandedUrl = ""
-
-    // urlList.map(function(index, url) {
-    //     if (url == req.body.shortUrl) {
-    //         expandedUrl = "regex101.com"
-    //     }
-    // })
-
-    res.send(responseHandler.success("getUrlData Success !", "regex101.com"));
-});
-app.get('/getAllUrls', jsonParser, function(req, res) {
-    let urlList = ["google.com", "facebook.com", "github.com", "npmjs.com", "techcrunch.com", "tutorialspoint.com"]
-    let urlData = []
-    urlList.map(function(url, index) {
-        let singleUrlData = {
-            urlId: index,
-            creationDate: new Date().toISOString(),
-            shortenedUrl: url,
-            expandedUrl: url
+        let loggedInUser = await authHandler.login(username, password)
+        if (username == loggedInUser) {
+            res.send(responseHandler.success("Login Success !", req.body.username));
         }
-        console.log(urlData)
-        urlData.push(singleUrlData);
-    })
+    } catch (error) {
+        console.log(error)
+        res.send(responseHandler.error("Login Failure !", error));
+    }
 
+});
+app.post('/getUrlData', jsonParser, async function(req, res) {
+    let urlData = await urlOperations.getAllUrls()
     res.send(responseHandler.success("getAllUrls Success !", urlData));
 });
-app.post('/generateShortUrl', jsonParser, function(req, res) {
-
-    if (req.body.expandedUrl == "google.com")
-
-        res.send(responseHandler.success("generateShortUrl Success !", "regex101.com"));
+app.get('/getAllUrls', jsonParser, async function(req, res) {
+    let urlData = await urlOperations.getAllUrls()
+    res.send(responseHandler.success("getAllUrls Success !", urlData));
 });
-app.post('/generateExpandedUrl', jsonParser, function(req, res) {
+app.post('/generateShortUrl', jsonParser, async function(req, res) {
+    let shortUrl = await urlOperations.generateShortUrl(req.body.expandedUrl)
+    res.send(responseHandler.success("generateShortUrl Success !", { shortenedUrl: shortUrl }));
+});
+app.post('/generateExpandedUrl', jsonParser, async function(req, res) {
+
+    try {
+        let shortenedUrl = req.body.shortenedUrl;
+        let expandedUrl = await urlOperations.generateExpandedUrl(shortenedUrl)
+        res.send(responseHandler.success("Login Success !", expandedUrl));
+    } catch (error) {
+        console.log(error)
+        res.send(responseHandler.error("Login Failure !", error));
+    }
+
+
 
     if (req.body.shortenedUrl == "regex101.com")
 
         res.send(responseHandler.success("generateExpandedUrl Success !", "google.com"));
 });
-app.delete('/deleteUrl/:urlId', function(req, res) {
+app.delete('/deleteUrl/:urlId', async function(req, res) {
+
+    await urlOperations.deleteUrlRecord(req.params.urlId)
+
+
 
     urlDeleteResponse = {
         deletedUrlId: req.params.urlId,
