@@ -4,7 +4,7 @@
     "description": "",
     "main": "app.js",
     "scripts": {
-        "start": "node index",
+        "start": "node index.js",
         "dev": "nodemon index"
     },
     "author": "",
@@ -15,5 +15,8 @@
         "express": "^4.17.1",
         "express-generator": "^4.16.1",
         "shortid": "^2.2.15"
+    },
+    "engines": {
+        "node ": "v12.18.2"
     }
 }
