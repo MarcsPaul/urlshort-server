@@ -4,10 +4,12 @@ const constants = require("./constants")
 const bodyParser = require("body-parser");
 const authHandler = require("./middleware/authHandler")
 const urlOperations = require("./middleware/urlOperations")
+var cors = require('cors')
 var app = express();
 var jsonParser = bodyParser.json()
 var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
+app.use(cors())
 
 app.post('/login', jsonParser, async function(req, res) {
 
