@@ -1,82 +1,84 @@
 var express = require('express');
-const responseHandler = require("./packResponse")
-const constants = require("./constants")
-const bodyParser = require("body-parser");
-const authHandler = require("./middleware/authHandler")
+const responseHandler = require("./utils/responseHandler")
+const constants = require("./utils/constants")
+const authHandler = require("./middleware/userOperations")
 const urlOperations = require("./middleware/urlOperations")
 var cors = require('cors')
 var app = express();
-var jsonParser = bodyParser.json()
-var urlencodedParser = bodyParser.urlencoded({ extended: false })
-
+app.use(express.json());
 app.use(cors())
 
-app.post('/login', jsonParser, async function(req, res) {
+app.post('/login', async function(req, res) {
 
     try {
-        let username = req.body.username;
-        let password = req.body.password;
-        console.log(username)
-        console.log(password)
-
-        let loggedInUser = await authHandler.login(username, password)
-        if (username == loggedInUser) {
-            res.send(responseHandler.success("Login Success !", req.body.username));
-        }
+        let usernameFromLoginRequest = req.body.username;
+        let passwordFromLoginRequest = req.body.password;
+        console.log(usernameFromLoginRequest + ":" + passwordFromLoginRequest)
+        let loggedInUser = await authHandler.login(usernameFromLoginRequest, passwordFromLoginRequest)
+        res.send(responseHandler.success(constants.LOGIN_SUCCESS, loggedInUser));
     } catch (error) {
         console.log(error)
-        res.send(responseHandler.error("Login Failure !", error));
+        res.send(responseHandler.error(constants.LOGIN_FAILURE, error));
     }
 
 });
-app.post('/getUrlData', jsonParser, async function(req, res) {
-    let urlData = await urlOperations.getAllUrls()
-    res.send(responseHandler.success("getAllUrls Success !", urlData));
-});
-app.get('/getAllUrls', jsonParser, async function(req, res) {
-    let urlData = await urlOperations.getAllUrls()
-    res.send(responseHandler.success("getAllUrls Success !", urlData));
-});
-app.post('/generateShortUrl', jsonParser, async function(req, res) {
-    let shortUrl = await urlOperations.generateShortUrl(req.body.expandedUrl)
-    res.send(responseHandler.success("generateShortUrl Success !", { shortenedUrl: shortUrl }));
-});
-app.post('/generateExpandedUrl', jsonParser, async function(req, res) {
+app.post('/createuser', async function(req, res) {
 
     try {
-        let shortenedUrl = req.body.shortenedUrl;
-        let expandedUrl = await urlOperations.generateExpandedUrl(shortenedUrl)
-        res.send(responseHandler.success("Login Success !", expandedUrl));
+        let usernameFromSignUpRequest = req.body.username;
+        let passwordFromSignUpRequest = req.body.password;
+        console.log(usernameFromSignUpRequest + ":" + passwordFromSignUpRequest)
+        let newUserData = await authHandler.createuser(usernameFromSignUpRequest, passwordFromSignUpRequest)
+        res.send(responseHandler.success(constants.SIGNUP_SUCCESS, newUserData));
     } catch (error) {
         console.log(error)
-        res.send(responseHandler.error("Login Failure !", error));
+        res.send(responseHandler.error(constants.SIGNUP_FAILURE, error));
     }
 
-
-
-    if (req.body.shortenedUrl == "regex101.com")
-
-        res.send(responseHandler.success("generateExpandedUrl Success !", "google.com"));
+});
+app.get('/getAllUrls', async function(req, res) {
+    try {
+        let listOfAllUrlData = await urlOperations.getAllUrls()
+        res.send(responseHandler.success(constants.GET_ALL_URLS_SUCCESS, listOfAllUrlData));
+    } catch (error) {
+        console.log(error)
+        res.send(responseHandler.error(constants.GET_ALL_URLS_FAILURE, error));
+    }
+});
+app.post('/generateShortUrl', async function(req, res) {
+    try {
+        let generatedShortUrl = await urlOperations.generateShortUrl(req.body.expandedUrl)
+        let generatedShortUrlData = { shortenedUrl: generatedShortUrl }
+        res.send(responseHandler.success(constants.GENERATE_SHORT_URL_SUCCESS, generatedShortUrlData));
+    } catch (error) {
+        console.log(error)
+        res.send(responseHandler.error(constants.GENERATE_SHORT_URL_FAILURE, error));
+    }
+});
+app.post('/getExpandedUrl', async function(req, res) {
+    try {
+        let generatedExpandedUrl = await urlOperations.getExpandedUrl(req.body.shortenedUrl)
+        let generatedExpandedUrlData = { expandedUrl: generatedExpandedUrl }
+        res.send(responseHandler.success(constants.GENERATE_EXPANDED_URL_SUCCESS, generatedExpandedUrlData));
+    } catch (error) {
+        console.log(error)
+        res.send(responseHandler.error(constants.GENERATE_EXPANDED_URL_FAILURE, error));
+    }
 });
 app.delete('/deleteUrl/:urlId', async function(req, res) {
-
-    await urlOperations.deleteUrlRecord(req.params.urlId)
-
-
-
-    urlDeleteResponse = {
-        deletedUrlId: req.params.urlId,
-        deletedUrl: {
-            urlId: 0,
-            creationDate: "2020-09-05T14:15:34.171Z",
-            shortenedUrl: "google.com",
-            expandedUrl: "google.com"
+    try {
+        let urlIdFromRequest = req.params.urlId
+        await urlOperations.deleteUrlRecord(urlIdFromRequest)
+        urlDeleteResponse = {
+            deletedUrlId: urlIdFromRequest
         }
+        res.send(responseHandler.success(constants.DELETE_URL_SUCCESS, urlDeleteResponse));
+    } catch (error) {
+        console.log(error)
+        res.send(responseHandler.error(constants.DELETE_URL_FAILURE, error));
     }
-    res.send(responseHandler.success("deleteUrl Success !", urlDeleteResponse));
 });
 
-// app.listen(3000);
 
 var server = app.listen(process.env.PORT || 8080, function() {
     var port = server.address().port;

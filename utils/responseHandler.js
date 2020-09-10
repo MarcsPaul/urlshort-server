@@ -1,5 +1,3 @@
-const constants = require('./constants');
-
 module.exports.success = (message, data) => {
     let code = 200;
     return {

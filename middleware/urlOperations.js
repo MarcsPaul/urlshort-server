@@ -1,20 +1,13 @@
-const elasticsearchService = require("../services/elasticsearchServices/elasticsearchServices");
+const elasticsearchService = require("../elasticsearchServices/elasticsearchServices");
 const shortid = require('shortid');
+const constants = require('../utils/constants');
 
-
-// "urlId": 0,
-// "creationDate": "2020-09-06T15:57:31.481Z",
-// "shortenedUrl": "google.com",
-// "expandedUrl": "google.com"
-
-
-
-module.exports.generateExpandedUrl = async(shortenedUrl) => {
+module.exports.getExpandedUrl = async(shortenedUrl) => {
     try {
         console.log(shortenedUrl)
         let urlSections = shortenedUrl.split("/")
         let urlID = urlSections[1]
-        let loginQuery = {
+        let getExpandedUrlQuery = {
             "query": {
                 "term": {
                     "urlId.keyword": {
@@ -23,21 +16,24 @@ module.exports.generateExpandedUrl = async(shortenedUrl) => {
                 }
             }
         }
-        console.log(loginQuery)
-        let esResponse = await elasticsearchService.query("urls", "_doc", loginQuery);
-        console.log(JSON.stringify(esResponse.body.hits.hits[0], null, 2))
-        let urldata = esResponse.body.hits.hits[0]["_source"];
+        console.log(getExpandedUrlQuery)
+        let esResponse = await elasticsearchService.query(constants.URLS_INDEX, constants.ELASTICSEARCH_DOC_TYPE_FEILD, getExpandedUrlQuery);
+        let esResponseBody = esResponse.body
+        let expandedUrlData = esResponseBody.hits.hits[0]
+        console.log(JSON.stringify(expandedUrlData, null, 2))
+        let urldata = expandedUrlData[constants.ELASTICSEARCH_SOURCE_FEILD];
         return urldata.expandedUrl;
     } catch (error) {
         throw error;
     }
 };
+
 module.exports.generateShortUrl = async expandedUrl => {
     try {
         const urlCode = shortid.generate();
-        let shortenedUrl = "binarythread.com/" + urlCode
+        let shortenedUrl = constants.DOMAIN_NAME + urlCode
         let esBody = {
-            index: "urls",
+            index: constants.URLS_INDEX,
             body: {
                 urlId: urlCode,
                 expandedUrl: expandedUrl,
@@ -57,30 +53,30 @@ module.exports.generateShortUrl = async expandedUrl => {
 
 module.exports.getAllUrls = async() => {
     try {
-        let loginQuery = {
-            "query": {
-                "match_all": {}
-            }
-        }
-        console.log(loginQuery)
-        let esResponse = await elasticsearchService.query("urls", "_doc", loginQuery);
-        let allUrlsEsDocHitsList = esResponse.body.hits.hits
-        console.log(JSON.stringify(allUrlsEsDocHitsList, null, 2))
-        let urlData = []
-        allUrlsEsDocHitsList.map(function(allUrlsEsDocHit, index) {
-            let allUrlsEsDocHitSource = allUrlsEsDocHit["_source"]
-            let singleUrlData = {
-                    urlId: allUrlsEsDocHitSource.urlId,
-                    creationDate: allUrlsEsDocHitSource.creationDate,
-                    shortenedUrl: allUrlsEsDocHitSource.shortenedUrl,
-                    expandedUrl: allUrlsEsDocHitSource.expandedUrl
+        let getAllUrlQuery = {
+                "query": {
+                    "match_all": {}
                 }
-                // console.log(singleUrlData)
-            urlData.push(singleUrlData);
-        })
-        console.log(urlData)
-
-        return urlData;
+            }
+            // console.log(getAllUrlQuery)
+        let esResponse = await elasticsearchService.query(constants.URLS_INDEX, constants.ELASTICSEARCH_DOC_TYPE_FEILD, getAllUrlQuery);
+        let esResponseBody = esResponse.body
+        let allUrlsEsDocsList = esResponseBody.hits.hits
+        console.log(JSON.stringify(allUrlsEsDocsList, null, 2))
+        let listOfAllUrlData = []
+        allUrlsEsDocsList.map(function(individualUrlEsDoc) {
+                let individualUrlEsDocSource = individualUrlEsDoc[constants.ELASTICSEARCH_SOURCE_FEILD]
+                let singleUrlData = {
+                        urlId: individualUrlEsDocSource.urlId,
+                        creationDate: individualUrlEsDocSource.creationDate,
+                        shortenedUrl: individualUrlEsDocSource.shortenedUrl,
+                        expandedUrl: individualUrlEsDocSource.expandedUrl
+                    }
+                    // console.log(singleUrlData)
+                listOfAllUrlData.push(singleUrlData);
+            })
+            // console.log(listOfAllUrlData)
+        return listOfAllUrlData;
     } catch (error) {
         throw error;
     }
@@ -89,7 +85,7 @@ module.exports.getAllUrls = async() => {
 module.exports.deleteUrlRecord = async(urlId) => {
     try {
         console.log(urlId)
-        let loginQuery = {
+        let deleteUrlQuery = {
             "query": {
                 "term": {
                     "urlId.keyword": {
@@ -98,8 +94,8 @@ module.exports.deleteUrlRecord = async(urlId) => {
                 }
             }
         }
-        console.log(loginQuery)
-        let esResponse = await elasticsearchService.deleteByQuery("urls", "_doc", loginQuery);
+        console.log(deleteUrlQuery)
+        let esResponse = await elasticsearchService.deleteByQuery(constants.URLS_INDEX, constants.ELASTICSEARCH_DOC_TYPE_FEILD, deleteUrlQuery);
         console.log(JSON.stringify(esResponse, null, 2))
             // return urldata.expandedUrl;
     } catch (error) {

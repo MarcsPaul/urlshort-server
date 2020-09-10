@@ -1,5 +1,6 @@
 const client = require('./elasticsearchClient');
-const esUtil = require('./elasticsearchUtil');
+
+
 module.exports.index = async args => {
     try {
         args.refresh = true;
@@ -10,8 +11,6 @@ module.exports.index = async args => {
         throw error;
     }
 };
-
-
 module.exports.indexExists = async args => {
     try {
         let indexName = args.indexName;
@@ -23,7 +22,6 @@ module.exports.indexExists = async args => {
         throw error;
     }
 };
-
 module.exports.update = async(index, id, body) => {
     try {
         let response = await client.update({
